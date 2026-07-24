@@ -3,7 +3,6 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
-from urllib.parse import parse_qs, urlparse
 
 #First load the credentials from the .env file
 load_dotenv()
