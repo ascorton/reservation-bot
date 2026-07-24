@@ -58,29 +58,31 @@ def book_class():
         
         if response_classes.status_code == 200:
 
-            found_class_id = obtain_class_id(session, headers)
+            found_class_ids = obtain_class_id(session, headers)
 
-            if not found_class_id:
-                print("Could not find class Id.")
+            if not found_class_ids:
+                print("Could not find any class id for the specified parameters.")
                 return session
 
             # Refresh token in case a new one is needed for reservation
             token_reserva_input = soup_classes.find('input', {'name': 'authenticity_token'})
             token_reserva = token_reserva_input.get('value') if token_reserva_input else authenticity_token
 
-            booking_payload = {
-                "authenticity_token": token_reserva,
-                "redirect_to": "",
-                "fullscreen": "",
-                "class_reservation[single_class_id]": found_class_id
-            }
+            for index, class_id in enumerate(found_class_ids, start=1):
 
-            res_reserva = session.post(RESERVATION_URL, data=booking_payload, headers=headers, allow_redirects=True)
+                booking_payload = {
+                    "authenticity_token": token_reserva,
+                    "redirect_to": "",
+                    "fullscreen": "",
+                    "class_reservation[single_class_id]": class_id
+                }
 
-            if res_reserva.status_code == 200 or res_reserva.status_code == 302:
-                print("Booking successful!!")
-            else:
-                print(f"There was a problem with the reservation. Code: {res_reserva.status_code}")          
+                res_reserva = session.post(RESERVATION_URL, data=booking_payload, headers=headers, allow_redirects=True)
+
+                if res_reserva.status_code in [200, 302]:
+                    ("Booking successful!!")
+                else:
+                    print(f"There was a problem with the reservation. Code: {res_reserva.status_code}")
         else:
             print(f"Could not load classes page. Code: {response_classes.status_code}")
             
@@ -99,42 +101,45 @@ def obtain_class_id(session, headers):
     day_of_week = tomorrow.weekday()
 
     if day_of_week in [0, 1, 2, 4]:
-        class_time = "17:00"
-    elif day_of_week is 5:
-        class_time = "10:00"
+        class_times = ["17:00", "18:00"]
+    elif day_of_week == 5:
+        class_times = ["10:00"]
     else:
-        return
+        print(f"No class will be booked for tomorrow ({tomorrow.strftime('%A')}).")
+        return []
 
     dias_es = {'Mon': 'Lun', 'Tue': 'Mar', 'Wed': 'Mié', 'Thu': 'Jue', 'Fri': 'Vie', 'Sat': 'Sáb', 'Sun': 'Dom'}
     dia_str = dias_es[tomorrow.strftime('%a')]
     fecha_str = tomorrow.strftime(f"{dia_str} %d/%m/%Y")
 
     program_id = "5cfad026801ff6003b64203c" # Id belonging to "OPEN WOD-" program, must be changed if another program is desired
-    url_filtrada = f"{CLASSES_URL}?date={fecha_str}&program_id={program_id}"
+    filtered_url = f"{CLASSES_URL}?date={fecha_str}&program_id={program_id}"
 
     # Request to obtain HTML with classes belonging to selected date and program
-    classes_response = session.get(url_filtrada, headers=headers)
+    classes_response = session.get(filtered_url, headers=headers)
 
     if classes_response.status_code != 200:
             print("Could not access class list.")
-            return
+            return []
 
     soup_classes = BeautifulSoup(classes_response.text, 'html.parser')
-    class_id = None
+    class_ids = []
 
     # This type was found as the correct one to search for by saving the response HTML and looking for times like "17:00"
     # It searches for the calculated class time defined in the previous hardcoded contidion, must be changed for different outcome
     for option in soup_classes.find_all('option'):
-        if class_time in option.get_text():
-            class_id = option.get('value')
-            break
+        for time in class_times:
+            if time in option.get_text():
+                class_id = option.get('value')
+                if class_id and class_id not in class_ids:
+                    class_ids.append(class_id)
 
-    if not class_id:
-        print("No classes for tomorrow at 17:00 were found.")
-        return
+    if not class_ids:
+        print(f"No classes for tomorrow matching {class_times} were found.")
+        return []
 
-    print("¡Class Id obtained!")
-    return class_id
+    print("¡Class Ids obtained!")
+    return class_ids
 
 if __name__ == "__main__":
     book_class()
