@@ -95,6 +95,16 @@ def obtain_class_id(session, headers):
 
     # Get desired class date
     tomorrow = datetime.now() + timedelta(days=1)
+
+    day_of_week = tomorrow.weekday()
+
+    if day_of_week in [0, 1, 2, 4]:
+        class_time = "17:00"
+    elif day_of_week is 5:
+        class_time = "10:00"
+    else:
+        return
+
     dias_es = {'Mon': 'Lun', 'Tue': 'Mar', 'Wed': 'Mié', 'Thu': 'Jue', 'Fri': 'Vie', 'Sat': 'Sáb', 'Sun': 'Dom'}
     dia_str = dias_es[tomorrow.strftime('%a')]
     fecha_str = tomorrow.strftime(f"{dia_str} %d/%m/%Y")
@@ -112,11 +122,10 @@ def obtain_class_id(session, headers):
     soup_classes = BeautifulSoup(classes_response.text, 'html.parser')
     class_id = None
 
-    # Search for elements of type option and containing "17:00"
-    # This type was found as the correcto one to search for by saving the response HTML and looking for times like "17:00"
-    # Must be changed searched text if a different time is desired
+    # This type was found as the correct one to search for by saving the response HTML and looking for times like "17:00"
+    # It searches for the calculated class time defined in the previous hardcoded contidion, must be changed for different outcome
     for option in soup_classes.find_all('option'):
-        if '17:00' in option.get_text():
+        if class_time in option.get_text():
             class_id = option.get('value')
             break
 
