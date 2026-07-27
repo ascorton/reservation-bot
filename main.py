@@ -12,5 +12,5 @@ print("Booking bot initiated. Awaiting 16:00...")
 
 while True:
     schedule.run_pending()
-    time.sleep(1)
+    time.sleep(60)
 
