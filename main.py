@@ -20,7 +20,7 @@ schedule.every().thursday.at("17:00").do(run_job)
 
 schedule.every().friday.at("09:00").do(run_job)
 
-print("Booking bot initiated. Awaiting 16:00...")
+print("Booking bot initiated. Awaiting...")
 
 while True:
     schedule.run_pending()

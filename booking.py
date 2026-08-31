@@ -2,10 +2,12 @@ import requests
 from requests import Session
 from bs4 import BeautifulSoup
 from config import API_URL, CLASSES_URL, LOGIN_URL, USER, PASSWORD
-from classes_management import get_classes_ids, book_class
+from classes_management import get_class_id, book_class
 
-def run_booking_script():
+def run_booking_script(program = "OPEN WOD-"):
     session = requests.Session()
+
+    # The following headers are necessary to make Python's HTML requests appear as if they are coming from a user's web browser
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -33,16 +35,17 @@ def run_booking_script():
     if response_classes.status_code != 200:
         print(f"Could not load classes page. Code: {response_classes.status_code}")
 
-    found_classes_ids = get_classes_ids(session, headers)
+    # It obtains target class id from the crossfit web based on the execution time and date
+    found_class_id = get_class_id(session, headers, program)
 
-    if not found_classes_ids:
+    if not found_class_id:
         print("Could not find any class id for the specified parameters.")
         return session
 
     token_reserva_input = soup_classes.find('input', {'name': 'authenticity_token'})
     token_reserva = token_reserva_input.get('value') if token_reserva_input else authenticity_token
 
-    book_class(found_classes_ids, token_reserva, session, headers)
+    book_class(found_class_id, token_reserva, session, headers)
 
     return session
 
